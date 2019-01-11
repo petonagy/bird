@@ -150,6 +150,7 @@ read_iproute_table(char *file, char *prefix, int max)
 
 
 static char *config_name = PATH_CONFIG_FILE;
+static char *bgp_update_notify_file = "/tmp/bgp_update_notify";
 
 static int
 cf_read(byte *dest, uint len, int fd)
@@ -618,12 +619,13 @@ signal_init(void)
  *	Parsing of command-line arguments
  */
 
-static char *opt_list = "bc:dD:ps:P:u:g:flRh";
+static char *opt_list = "bc:dD:ps:P:u:g:flRe:h";
 static int parse_and_exit;
 char *bird_name;
 static char *use_user;
 static char *use_group;
 static int run_in_foreground = 0;
+static int bgp_update_notify = 0;
 
 static void
 display_usage(void)
@@ -654,6 +656,7 @@ display_help(void)
     "  -R                   Apply graceful restart recovery after start\n"
     "  -s <control-socket>  Use given filename for a control socket\n"
     "  -u <user>            Drop privileges and use given user ID\n"
+    "  -e <output-file>     BGP update message notification\n"
     "  --version            Display version of BIRD\n");
 
   exit(0);
@@ -783,6 +786,10 @@ parse_args(int argc, char **argv)
       case 'R':
 	graceful_restart_recovery();
 	break;
+      case 'e':
+  bgp_update_notify_file = optarg;
+  bgp_update_notify = 1;
+  break;
       case 'h':
 	display_help();
 	break;
@@ -846,6 +853,17 @@ main(int argc, char **argv)
   proto_build(&proto_unix_iface);
 
   struct config *conf = read_config();
+
+  conf->bgp_update = 0;
+  if (bgp_update_notify) {
+    conf->bgp_update = 1;
+    conf->bgp_update_fd = open(bgp_update_notify_file, O_WRONLY|O_CREAT|O_APPEND);
+    // conf->bgp_update_fd = fopen(bgp_update_notify_file, "w");
+    if (conf->bgp_update_fd < 0)
+      die("Cannot open BGP update notify file.");
+    // fprintf(conf->bgp_update_fd, "withdraw %u %u", 4234, 3123);
+    // write(conf->bgp_update_fd, "test", 4);
+  }
 
   if (parse_and_exit)
     exit(0);

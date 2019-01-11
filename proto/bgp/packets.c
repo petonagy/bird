@@ -11,6 +11,8 @@
 #undef LOCAL_DEBUG
 
 #include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
 
 #include "nest/bird.h"
 #include "nest/iface.h"
@@ -1312,6 +1314,36 @@ bgp_encode_nlri_ip4(struct bgp_write_state *s, struct bgp_bucket *buck, byte *bu
 }
 
 static void
+notify_update4(struct bgp_parse_state *s, ip4_addr *addr, uint len, rta *a)
+{
+  char cmd_buf[64];
+
+  if (!a) {
+    sprintf(cmd_buf, "withdraw %u %u\n", ip4_ntoh(*addr), len);
+    write(s->proto->p.cf->global->bgp_update_fd, cmd_buf, strlen(cmd_buf));
+  } else {
+    sprintf(cmd_buf, "announce %u %u\n", ip4_ntoh(*addr), len);
+    write(s->proto->p.cf->global->bgp_update_fd, cmd_buf, strlen(cmd_buf));
+  }
+  memset(cmd_buf, 0, sizeof(cmd_buf));
+}
+
+static void
+notify_update6(struct bgp_parse_state *s, ip6_addr *addr, uint len, rta *a)
+{
+  char cmd_buf[128];
+
+  if (!a) {
+    sprintf(cmd_buf, "withdraw %u %u %u %u %u\n", addr->addr[0], addr->addr[1], addr->addr[2], addr->addr[3], len);
+    write(s->proto->p.cf->global->bgp_update_fd, cmd_buf, strlen(cmd_buf));
+  } else {
+    sprintf(cmd_buf, "announce %u %u %u %u %u\n", addr->addr[0], addr->addr[1], addr->addr[2], addr->addr[3], len);
+    write(s->proto->p.cf->global->bgp_update_fd, cmd_buf, strlen(cmd_buf));
+  }
+  memset(cmd_buf, 0, sizeof(cmd_buf));
+}
+
+static void
 bgp_decode_nlri_ip4(struct bgp_parse_state *s, byte *pos, uint len, rta *a)
 {
   while (len)
@@ -1351,6 +1383,9 @@ bgp_decode_nlri_ip4(struct bgp_parse_state *s, byte *pos, uint len, rta *a)
 
     net = NET_ADDR_IP4(ip4_ntoh(addr), l);
     net_normalize_ip4(&net);
+
+    if (s->proto->p.cf->global->bgp_update)
+      notify_update4(s, &addr, l, a);
 
     // XXXX validate prefix
 
@@ -1436,6 +1471,9 @@ bgp_decode_nlri_ip6(struct bgp_parse_state *s, byte *pos, uint len, rta *a)
 
     net = NET_ADDR_IP6(ip6_ntoh(addr), l);
     net_normalize_ip6(&net);
+
+    if (s->proto->p.cf->global->bgp_update)
+      notify_update6(s, &(net.prefix), l, a);
 
     // XXXX validate prefix
 
@@ -1533,6 +1571,9 @@ bgp_decode_nlri_vpn4(struct bgp_parse_state *s, byte *pos, uint len, rta *a)
     net = NET_ADDR_VPN4(ip4_ntoh(addr), l, rd);
     net_normalize_vpn4(&net);
 
+    if (s->proto->p.cf->global->bgp_update)
+      notify_update4(s, &addr, l, a);
+
     // XXXX validate prefix
 
     bgp_rte_update(s, (net_addr *) &net, path_id, a);
@@ -1629,6 +1670,9 @@ bgp_decode_nlri_vpn6(struct bgp_parse_state *s, byte *pos, uint len, rta *a)
 
     net = NET_ADDR_VPN6(ip6_ntoh(addr), l, rd);
     net_normalize_vpn6(&net);
+
+    if (s->proto->p.cf->global->bgp_update)
+      notify_update6(s, &(net.prefix), l, a);
 
     // XXXX validate prefix
 

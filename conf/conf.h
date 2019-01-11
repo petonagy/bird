@@ -9,6 +9,7 @@
 #ifndef _BIRD_CONF_H_
 #define _BIRD_CONF_H_
 
+#include <stdio.h>
 #include "sysdep/config.h"
 #include "lib/ip.h"
 #include "lib/hash.h"
@@ -55,6 +56,10 @@ struct config {
   int obstacle_count;			/* Number of items blocking freeing of this config */
   int shutdown;				/* This is a pseudo-config for daemon shutdown */
   btime load_time;			/* When we've got this configuration */
+
+  // BGP Update msg notification
+  int bgp_update_fd;  /* File descriptor of bgp update notify file */
+  int bgp_update;     /*  */
 };
 
 /* Please don't use these variables in protocols. Use proto_config->global instead. */
