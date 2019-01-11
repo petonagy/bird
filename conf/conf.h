@@ -59,7 +59,7 @@ struct config {
 
   // BGP Update msg notification
   int bgp_update_fd;  /* File descriptor of bgp update notify file */
-  int bgp_update;     /*  */
+  int bgp_update;     /* BGP update notification flag */
 };
 
 /* Please don't use these variables in protocols. Use proto_config->global instead. */

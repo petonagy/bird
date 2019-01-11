@@ -858,11 +858,9 @@ main(int argc, char **argv)
   if (bgp_update_notify) {
     conf->bgp_update = 1;
     conf->bgp_update_fd = open(bgp_update_notify_file, O_WRONLY|O_CREAT|O_APPEND);
-    // conf->bgp_update_fd = fopen(bgp_update_notify_file, "w");
+
     if (conf->bgp_update_fd < 0)
       die("Cannot open BGP update notify file.");
-    // fprintf(conf->bgp_update_fd, "withdraw %u %u", 4234, 3123);
-    // write(conf->bgp_update_fd, "test", 4);
   }
 
   if (parse_and_exit)
