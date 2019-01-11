@@ -9,7 +9,6 @@
 #ifndef _BIRD_CONF_H_
 #define _BIRD_CONF_H_
 
-#include <stdio.h>
 #include "sysdep/config.h"
 #include "lib/ip.h"
 #include "lib/hash.h"
